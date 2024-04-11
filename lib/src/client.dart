@@ -1,9 +1,7 @@
 part of '../tg.dart';
 
-class Client {
+class Client extends t.Client {
   Client({
-    required this.apiId,
-    required this.apiHash,
     required this.receiver,
     required this.sender,
     required this.obfuscation,
@@ -11,21 +9,11 @@ class Client {
     required this.idSeq,
     //required this.sessionStore,
   }) : _trns = EncryptedObjectTransformer(receiver, authKey, obfuscation) {
-    auth = ClientAuth._(this);
-    connection = ClientConnection._(this);
-    account = ClientAccount._(this);
-
     _trns.stream.listen((v) {
       print(v);
       _handleIncomingMessage(v);
     });
   }
-
-  /// API Id.
-  final int apiId;
-
-  /// API Hash.
-  final String apiHash;
 
   final Obfuscation? obfuscation;
   final Stream<Uint8List> receiver;
@@ -37,10 +25,6 @@ class Client {
 
   final MessageIdSequenceGenerator idSeq;
 
-  late final ClientAuth auth;
-  late final ClientConnection connection;
-  late final ClientAccount account;
-
   //final Set<int> _msgsToAck = {};
 
   DCSession? _dcSession;
@@ -51,16 +35,16 @@ class Client {
     return x;
   }
 
-  final Map<int, Completer<Result>> _pending = {};
+  final Map<int, Completer<t.Result>> _pending = {};
   // final List<int> _msgsToAck = [];
 
-  final _updateStreamController = StreamController<UpdatesBase>.broadcast();
+  final _streamController = StreamController<UpdatesBase>.broadcast();
 
-  Stream<UpdatesBase> get updates => _updateStreamController.stream;
+  Stream<UpdatesBase> get stream => _streamController.stream;
 
   void _handleIncomingMessage(TlObject msg) {
     if (msg is UpdatesBase) {
-      _updateStreamController.add(msg);
+      _streamController.add(msg);
     }
 
     //
@@ -85,7 +69,7 @@ class Client {
       final result = msg.result;
 
       if (result is RpcError) {
-        task?.complete(Result._(null, result));
+        task?.complete(t.Result.error(result));
         _pending.remove(reqMsgId);
         return;
       } else if (result is GzipPacked) {
@@ -99,17 +83,18 @@ class Client {
         return;
       }
 
-      task?.complete(Result._(msg.result, null));
+      task?.complete(t.Result.ok(msg.result));
       _pending.remove(reqMsgId);
     }
   }
 
-  Future<Result> invoke(TlObject msg, bool preferEncryption) async {
+  @override
+  Future<t.Result<t.TlObject>> invoke(t.TlMethod method) {
     final auth = authKey;
 
-    preferEncryption &= auth.id != 0;
+    final preferEncryption = auth.id != 0;
 
-    final completer = Completer<Result>();
+    final completer = Completer<t.Result>();
     final m = idSeq.next(preferEncryption);
 
     // if (preferEncryption && _msgsToAck.isNotEmpty) {
@@ -139,121 +124,12 @@ class Client {
 
     _pending[m.id] = completer;
     final buffer = auth.id == 0
-        ? _encodeNoAuth(msg, m)
-        : _encodeWithAuth(msg, m, 10, auth);
+        ? _encodeNoAuth(method, m)
+        : _encodeWithAuth(method, m, 10, auth);
 
     obfuscation?.send.encryptDecrypt(buffer, buffer.length);
     sender.add(Uint8List.fromList(buffer));
 
     return completer.future;
-  }
-
-  /// Invokes an RPC with package's define layer.
-  Future<Result<TlObject>> _invokeWithLayer(TlMethod query) => invoke(
-        InvokeWithLayer(
-          layer: layer,
-          query: query,
-        ),
-        true,
-      );
-}
-
-class ClientAuth {
-  const ClientAuth._(this._c);
-
-  final Client _c;
-
-  Future<Result<AuthSentCodeBase>> sendCode(String phoneNumber,
-      [CodeSettings? settings]) async {
-    settings ??= CodeSettings(
-      allowFlashcall: false,
-      currentNumber: false,
-      allowAppHash: false,
-      allowMissedCall: false,
-      allowFirebase: false,
-      appSandbox: false,
-    );
-
-    final req = AuthSendCode(
-      phoneNumber: phoneNumber,
-      apiId: _c.apiId,
-      apiHash: _c.apiHash,
-      settings: settings,
-    );
-
-    final res = await _c.invoke(req, true);
-
-    return res._to<AuthSentCodeBase>();
-  }
-
-  Future<Result<AuthAuthorizationBase>> signIn(
-    String phoneNumber,
-    String phoneCodeHash,
-    String phoneCode,
-  ) async {
-    final req = AuthSignIn(
-      phoneNumber: phoneNumber,
-      phoneCodeHash: phoneCodeHash,
-      phoneCode: phoneCode,
-    );
-
-    final res = await _c.invoke(req, true);
-
-    return res._to<AuthAuthorizationBase>();
-  }
-
-  Future<Result<AuthAuthorizationBase>> checkPassword(
-    InputCheckPasswordSRP password,
-  ) async {
-    final req = AuthCheckPassword(
-      password: password,
-    );
-
-    final res = await _c.invoke(req, true);
-
-    return res._to<AuthAuthorizationBase>();
-  }
-}
-
-class ClientConnection {
-  const ClientConnection._(this._c);
-
-  final Client _c;
-
-  Future<Result<Config>> initConnection({
-    required String appVersion,
-    required String deviceModel,
-    required String langCode,
-    required String langPack,
-    required String systemLangCode,
-    required String systemVersion,
-  }) async {
-    final req = InitConnection(
-      apiId: _c.apiId,
-      appVersion: 'TG 1.0',
-      deviceModel: 'PC 64bit',
-      langCode: 'en',
-      langPack: '',
-      systemLangCode: 'en',
-      systemVersion: 'Android',
-      params: JsonObject(value: []),
-      query: HelpGetConfig(),
-    );
-
-    final res = await _c._invokeWithLayer(req);
-    return res._to<Config>();
-  }
-}
-
-class ClientAccount {
-  const ClientAccount._(this._c);
-
-  final Client _c;
-
-  Future<Result<AccountPassword>> getPassword() async {
-    final req = AccountGetPassword();
-
-    final res = await _c.invoke(req, true);
-    return res._to<AccountPassword>();
   }
 }

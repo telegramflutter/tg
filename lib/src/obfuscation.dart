@@ -1,6 +1,6 @@
 part of '../tg.dart';
 
-/// Obfuscation layer .
+/// Obfuscation.
 class Obfuscation {
   const Obfuscation._(this.send, this.recv, this.preamble);
 
@@ -57,8 +57,8 @@ class Obfuscation {
           .convert([...recvKey.sublist(0, 32), ...sec.sublist(0, 16)]).bytes);
     }
 
-    final sendCtr = Aes(sendKey, sendIV);
-    final recvCtr = Aes(recvKey, recvIV);
+    final sendCtr = AesCtr(sendKey, sendIV);
+    final recvCtr = AesCtr(recvKey, recvIV);
     final encrypted = Uint8List.fromList(preamble.toList());
 
     sendCtr.encryptDecrypt(encrypted, 64);
@@ -71,19 +71,19 @@ class Obfuscation {
   }
 
   /// Sender encryption.
-  final Aes send;
+  final AesCtr send;
 
   /// Receiver encryption.
-  final Aes recv;
+  final AesCtr recv;
 
   /// Preamble used to generate [send] and [recv].
   final Uint8List preamble;
 }
 
-/// Implementation of the encrytion/decription of Telegram messages.
-class Aes {
+/// Implementation of AES-Counter algorithm.
+class AesCtr {
   /// Constructor.
-  Aes(this.key, this.iv);
+  AesCtr(this.key, this.iv);
 
   /// Key.
   final Uint8List key;

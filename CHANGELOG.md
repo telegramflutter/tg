@@ -1,6 +1,10 @@
+## 0.0.4
+
+- Client base class.
+
 ## 0.0.3
 
-- Login functinality.
+- Login functionality.
 
 ## 0.0.2
 

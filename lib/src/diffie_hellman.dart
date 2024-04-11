@@ -1,7 +1,12 @@
 part of '../tg.dart';
 
 class DiffieHellman {
-  DiffieHellman(this.sender, this.receiver, this.obfuscation, this._idSeq) {
+  DiffieHellman(
+    this.sender,
+    this.receiver,
+    this.obfuscation,
+    this._idSeq,
+  ) {
     receiver.listen(_onMessage);
   }
 

@@ -16,7 +16,6 @@ import 'package:t/t.dart' as t;
 
 part 'src/decoders.dart';
 part 'src/encoders.dart';
-part 'src/result.dart';
 part 'src/encryption.dart';
 part 'src/exceptions.dart';
 part 'src/extensions.dart';
