@@ -27,5 +27,4 @@ part 'src/public_keys.dart';
 part 'src/client.dart';
 part 'src/constants.dart';
 part 'src/obfuscation.dart';
-part 'src/session.dart';
 part 'src/telegram_client.dart';

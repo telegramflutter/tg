@@ -5,35 +5,22 @@ class Client extends t.Client {
     required this.receiver,
     required this.sender,
     required this.obfuscation,
-    required this.authKey,
-    required this.idSeq,
+    required this.session,
     //required this.sessionStore,
-  }) : _trns = EncryptedObjectTransformer(receiver, authKey, obfuscation) {
-    _trns.stream.listen((v) {
-      print(v);
-      _handleIncomingMessage(v);
-    });
-  }
+  });
+
+  Session? session;
 
   final Obfuscation? obfuscation;
   final Stream<Uint8List> receiver;
   final Sink<Uint8List> sender;
-  final AuthorizationKey authKey;
 
-  final EncryptedObjectTransformer _trns;
+  late final EncryptedObjectTransformer _trns;
   //final SessionStore sessionStore;
 
-  final MessageIdSequenceGenerator idSeq;
+  final _idSeq = MessageIdSequenceGenerator();
 
   //final Set<int> _msgsToAck = {};
-
-  DCSession? _dcSession;
-
-  DCSession get dcSession {
-    final x = _dcSession ??= DCSession(id: 10);
-
-    return x;
-  }
 
   final Map<int, Completer<t.Result>> _pending = {};
   // final List<int> _msgsToAck = [];
@@ -88,14 +75,45 @@ class Client extends t.Client {
     }
   }
 
+  Future<Session> connect() async {
+    Future<Session> createSession() async {
+      final uot = UnEncryptedObjectTransformer(
+        receiver,
+        obfuscation,
+      );
+
+      final dh = DiffieHellman(sender, uot.stream, obfuscation, _idSeq);
+      final ak = await dh.exchange();
+
+      uot.dispose();
+
+      final ss = Session(id: 0, authKey: ak);
+
+      return ss;
+    }
+
+    final s = session ??= await createSession();
+
+    _trns = EncryptedObjectTransformer(receiver, s.authKey, obfuscation);
+
+    _trns.stream.listen((v) {
+      print(v);
+      _handleIncomingMessage(v);
+    });
+
+    return s;
+  }
+
   @override
-  Future<t.Result<t.TlObject>> invoke(t.TlMethod method) {
-    final auth = authKey;
+  Future<t.Result<t.TlObject>> invoke(t.TlMethod method) async {
+    final session = this.session ??= await connect();
+
+    final auth = session.authKey;
 
     final preferEncryption = auth.id != 0;
 
     final completer = Completer<t.Result>();
-    final m = idSeq.next(preferEncryption);
+    final m = _idSeq.next(preferEncryption);
 
     // if (preferEncryption && _msgsToAck.isNotEmpty) {
     //   final ack = idSeq.next(false);
