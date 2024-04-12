@@ -2,7 +2,7 @@ part of '../tg.dart';
 
 Uint8List _encodeNoAuth(
   TlObject message,
-  IdSeq m,
+  _IdSeq m,
 ) {
   final messageBuffer = message.asUint8List();
   final buffer = <int>[
@@ -18,7 +18,7 @@ Uint8List _encodeNoAuth(
 
 Uint8List _encodeWithAuth(
   TlObject message,
-  IdSeq m,
+  _IdSeq m,
   int sessionId,
   AuthorizationKey auth,
 ) {
@@ -62,12 +62,12 @@ Uint8List _encodeWithAuth(
   return Uint8List.fromList(buffer);
 }
 
-class MessageIdSequenceGenerator {
+class _MessageIdSequenceGenerator {
   int _lastSentMessageId = 0;
   int _seqno = 0;
   int serverTicksOffset = 0;
 
-  IdSeq next(bool preferEncryption) {
+  _IdSeq next(bool preferEncryption) {
     var msgId =
         DateTime.now().toUtc().ticks + serverTicksOffset - 621355968000000000;
     msgId = msgId * 428 +
@@ -82,12 +82,12 @@ class MessageIdSequenceGenerator {
 
     final seqno = preferEncryption ? _seqno++ * 2 + 1 : _seqno * 2;
 
-    return IdSeq(msgId, seqno);
+    return _IdSeq(msgId, seqno);
   }
 }
 
-class IdSeq {
-  const IdSeq(this.id, this.seqno);
+class _IdSeq {
+  const _IdSeq(this.id, this.seqno);
   final int id;
   final int seqno;
 }

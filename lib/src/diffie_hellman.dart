@@ -1,7 +1,7 @@
 part of '../tg.dart';
 
-class DiffieHellman {
-  DiffieHellman(
+class _DiffieHellman {
+  _DiffieHellman(
     this.sender,
     this.receiver,
     this.obfuscation,
@@ -12,7 +12,7 @@ class DiffieHellman {
 
   final Obfuscation? obfuscation;
   final Stream<TlObject> receiver;
-  final Sink<Uint8List> sender;
+  final Sink<Iterable<int>> sender;
 
   void _onMessage(TlObject msg) {
     if (msg is ResPQ) {
@@ -48,7 +48,7 @@ class DiffieHellman {
     }
   }
 
-  final MessageIdSequenceGenerator _idSeq;
+  final _MessageIdSequenceGenerator _idSeq;
 
   final Map<String, Completer<ResPQ>> _dicResPQ = {};
   final Map<String, Completer<ServerDHParamsOk>> _dicReqDHParams = {};

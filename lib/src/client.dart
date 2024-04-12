@@ -6,19 +6,17 @@ class Client extends t.Client {
     required this.sender,
     required this.obfuscation,
     required this.session,
-    //required this.sessionStore,
   });
 
   Session? session;
 
-  final Obfuscation? obfuscation;
+  final Obfuscation obfuscation;
   final Stream<Uint8List> receiver;
-  final Sink<Uint8List> sender;
+  final Sink<List<int>> sender;
 
-  late final EncryptedObjectTransformer _trns;
-  //final SessionStore sessionStore;
+  late final _EncryptedTransformer _trns;
 
-  final _idSeq = MessageIdSequenceGenerator();
+  final _idSeq = _MessageIdSequenceGenerator();
 
   //final Set<int> _msgsToAck = {};
 
@@ -76,25 +74,31 @@ class Client extends t.Client {
   }
 
   Future<Session> connect() async {
+    sender.add(obfuscation.preamble);
+    await Future.delayed(Duration(milliseconds: 100));
+
     Future<Session> createSession() async {
-      final uot = UnEncryptedObjectTransformer(
+      final uot = _UnEncryptedTransformer(
         receiver,
         obfuscation,
       );
 
-      final dh = DiffieHellman(sender, uot.stream, obfuscation, _idSeq);
+      final dh = _DiffieHellman(sender, uot.stream, obfuscation, _idSeq);
       final ak = await dh.exchange();
 
-      uot.dispose();
+      await uot.dispose();
 
-      final ss = Session(id: 0, authKey: ak);
+      final random = Random();
+      final sessionId = random.nextInt(1 << 32);
 
-      return ss;
+      final session = Session(id: sessionId, authKey: ak);
+
+      return session;
     }
 
     final s = session ??= await createSession();
 
-    _trns = EncryptedObjectTransformer(receiver, s.authKey, obfuscation);
+    _trns = _EncryptedTransformer(receiver, s.authKey, obfuscation);
 
     _trns.stream.listen((v) {
       print(v);
@@ -145,7 +149,7 @@ class Client extends t.Client {
         ? _encodeNoAuth(method, m)
         : _encodeWithAuth(method, m, 10, auth);
 
-    obfuscation?.send.encryptDecrypt(buffer, buffer.length);
+    obfuscation.send.encryptDecrypt(buffer, buffer.length);
     sender.add(Uint8List.fromList(buffer));
 
     return completer.future;

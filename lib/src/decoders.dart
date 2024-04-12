@@ -1,7 +1,7 @@
 part of '../tg.dart';
 
-class EncryptedObjectTransformer {
-  EncryptedObjectTransformer(this._receiver, this._authKey, this._obfuscation) {
+class _EncryptedTransformer {
+  _EncryptedTransformer(this._receiver, this._authKey, this._obfuscation) {
     _receiver.listen(_readFrame);
   }
 
@@ -33,7 +33,7 @@ class EncryptedObjectTransformer {
     final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
     _read.removeRange(0, length + 4);
 
-    final frame = Frame.parse(buffer, _obfuscation, _authKey);
+    final frame = _Frame.parse(buffer, _obfuscation, _authKey);
     final seqno = frame.seqno;
 
     if (seqno != null && (seqno & 1) != 0) {
@@ -46,8 +46,8 @@ class EncryptedObjectTransformer {
   }
 }
 
-class UnEncryptedObjectTransformer {
-  UnEncryptedObjectTransformer(this._receiver, this._obfuscation) {
+class _UnEncryptedTransformer {
+  _UnEncryptedTransformer(this._receiver, this._obfuscation) {
     _subscription = _receiver.listen(_readFrame);
   }
 
@@ -84,7 +84,7 @@ class UnEncryptedObjectTransformer {
     final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
     _read.removeRange(0, length + 4);
 
-    final frame = Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
+    final frame = _Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
     final seqno = frame.seqno;
 
     if (seqno != null && (seqno & 1) != 0) {
