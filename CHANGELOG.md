@@ -1,3 +1,7 @@
+## 0.0.5
+
+- Dependecies updated.
+
 ## 0.0.4
 
 - Client base class.
