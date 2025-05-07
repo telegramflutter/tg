@@ -101,7 +101,6 @@ class Client extends t.Client {
     _trns = _EncryptedTransformer(receiver, s.authKey, obfuscation);
 
     _trns.stream.listen((v) {
-      print(v);
       _handleIncomingMessage(v);
     });
 
