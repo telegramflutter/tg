@@ -9,10 +9,11 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
-import 'package:encrypt/encrypt.dart';
 import 'package:pointycastle/export.dart' as pc;
 import 'package:t/t.dart';
 import 'package:t/t.dart' as t;
+
+import 'src/encrypt.dart';
 
 part 'src/decoders.dart';
 part 'src/encoders.dart';

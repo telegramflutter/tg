@@ -11,9 +11,8 @@ environment:
 dependencies:
   t: ^0.0.20
   crypto: ^3.0.3
-  encrypt: ^5.0.3
-  archive: ^3.4.10
-  pointycastle: ^3.7.4
+  archive: ^4.0.7
+  pointycastle: ^4.0.0
 
 dev_dependencies:
   lints: ^5.1.0
