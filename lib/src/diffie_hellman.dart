@@ -120,8 +120,8 @@ class _DiffieHellman {
         192 - clearLength,
       );
 
-      final hash = sha256.convert(clearBuffer.take(192 + 32).toList());
-      clearBuffer.setRange(192 + 32, 192 + 32 + hash.bytes.length, hash.bytes);
+      final hash = sha256(clearBuffer.take(192 + 32).toList());
+      clearBuffer.setRange(192 + 32, 192 + 32 + hash.length, hash);
       clearBuffer.reverse(32, 192);
 
       final aesEncrypted = _aesIgeEncryptDecrypt(
@@ -130,7 +130,7 @@ class _DiffieHellman {
         true,
       );
 
-      final hashAes = sha256.convert(aesEncrypted).bytes;
+      final hashAes = sha256(aesEncrypted);
 
       for (int i = 0; i < 32; i++) // prefix aes_encrypted with temp_key_xor
       {
@@ -195,7 +195,7 @@ class _DiffieHellman {
     final padding = Uint8List(paddingToAdd);
     _rng.getBytes(padding);
 
-    final messageHash = sha1.convert(messageBuffer).bytes;
+    final messageHash = sha1(messageBuffer);
 
     final clearStream = [...messageHash, ...messageBuffer, ...padding];
     final encryptedData = _aesIgeEncryptDecrypt(
@@ -260,10 +260,10 @@ class _DiffieHellman {
     }
 
     final paddingLength = answer.length - answerReader.position;
-    final hash = sha1.convert(
-        answer.skip(20).take(answer.length - paddingLength - 20).toList());
+    final hash =
+        sha1(answer.skip(20).take(answer.length - paddingLength - 20).toList());
 
-    print('${_hex(answerHash)} == ${_hex(hash.bytes)}');
+    print('${_hex(answerHash)} == ${_hex(hash)}');
 
     final gA = _bigEndianInteger(answerObj.gA);
     final dhPrime = _bigEndianInteger(answerObj.dhPrime);
@@ -293,7 +293,7 @@ class _DiffieHellman {
     final gab = gA.modPow(b, dhPrime);
     final authKey = gab.toBytes(Endian.big);
     //8)
-    final authKeyHash = sha1.convert(authKey).bytes;
+    final authKeyHash = sha1(authKey);
     // (auth_key_aux_hash)
     retryId = BinaryReader(Uint8List.fromList(authKeyHash)).readInt64(false);
     //9)
@@ -307,7 +307,7 @@ class _DiffieHellman {
       ...authKeyHash.take(8),
     ];
 
-    final expectedNewNonceNHash = sha1.convert(expectedNewNonceN).bytes;
+    final expectedNewNonceNHash = sha1(expectedNewNonceN);
     final result = setClientDHparamsAnswer;
 
     if (result is DhGenOk) {

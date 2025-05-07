@@ -40,7 +40,7 @@ Uint8List _encodeWithAuth(
     ...paddingData,
   ];
 
-  final msgKey = Uint8List.fromList(sha256.convert(clear).bytes);
+  final msgKey = Uint8List.fromList(sha256(clear));
   final encryptedData = _encryptDecryptMessage(
     Uint8List.fromList(clear.skip(32).toList()),
     true,

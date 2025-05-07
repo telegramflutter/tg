@@ -50,11 +50,11 @@ class Obfuscation {
 
     final sec = secret;
     if (sec != null) {
-      sendKey = Uint8List.fromList(sha256
-          .convert([...sendKey.sublist(0, 32), ...sec.sublist(0, 16)]).bytes);
+      sendKey = Uint8List.fromList(
+          sha256([...sendKey.sublist(0, 32), ...sec.sublist(0, 16)]));
 
-      recvKey = Uint8List.fromList(sha256
-          .convert([...recvKey.sublist(0, 32), ...sec.sublist(0, 16)]).bytes);
+      recvKey = Uint8List.fromList(
+          sha256([...recvKey.sublist(0, 32), ...sec.sublist(0, 16)]));
     }
 
     final sendCtr = AesCtr(sendKey, sendIV);

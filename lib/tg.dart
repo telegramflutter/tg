@@ -8,11 +8,11 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
-import 'package:crypto/crypto.dart';
 import 'package:pointycastle/export.dart' as pc;
 import 'package:t/t.dart';
 import 'package:t/t.dart' as t;
 
+import 'src/crypto.dart';
 import 'src/encrypt.dart';
 
 part 'src/decoders.dart';

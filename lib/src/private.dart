@@ -99,9 +99,9 @@ Uint8List _aesIgeEncryptDecrypt(
 }
 
 AesKeyIV _constructTmpAESKeyIV(Int128 serverNonce, Int256 newNonce) {
-  final x1 = sha1.convert([...newNonce.data, ...serverNonce.data]).bytes;
-  final x2 = sha1.convert([...serverNonce.data, ...newNonce.data]).bytes;
-  final x3 = sha1.convert([...newNonce.data, ...newNonce.data]).bytes;
+  final x1 = sha1([...newNonce.data, ...serverNonce.data]);
+  final x2 = sha1([...serverNonce.data, ...newNonce.data]);
+  final x3 = sha1([...newNonce.data, ...newNonce.data]);
 
   final key = [...x1, ...x2.take(12)];
   final iv = [...x2.skip(12), ...x3, ...newNonce.data.take(4)];
@@ -203,8 +203,8 @@ Uint8List _encryptDecryptMessage(
     ...msgKey.skip(msgKeyOffset).take(16),
   ];
 
-  final sha256A = sha256.convert(x1).bytes;
-  final sha256B = sha256.convert(x2).bytes;
+  final sha256A = sha256(x1);
+  final sha256B = sha256(x2);
 
   final aesKey = [
     ...sha256A.skip(0).take(8),
