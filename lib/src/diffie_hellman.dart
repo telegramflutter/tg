@@ -5,7 +5,7 @@ class _DiffieHellman {
     this.sender,
     this.receiver,
     this.obfuscation,
-    this._idSeq,
+    this.getMessageId,
   ) {
     receiver.listen(_onMessage);
   }
@@ -48,7 +48,7 @@ class _DiffieHellman {
     }
   }
 
-  final _MessageIdSequenceGenerator _idSeq;
+  final _IdSeq Function(bool preferEncryption) getMessageId;
 
   final Map<String, Completer<ResPQ>> _dicResPQ = {};
   final Map<String, Completer<ServerDHParamsOk>> _dicReqDHParams = {};
@@ -57,7 +57,7 @@ class _DiffieHellman {
 
   Future<ResPQ> _reqPqMulti([Int128? nonce]) async {
     final completer = Completer<ResPQ>();
-    final m = _idSeq.next(false);
+    final m = getMessageId(false);
 
     nonce ??= Int128.random();
     final msg = ReqPqMulti(nonce: nonce);
@@ -158,7 +158,7 @@ class _DiffieHellman {
     );
 
     final completer = Completer<ServerDHParamsOk>();
-    final m = _idSeq.next(false);
+    final m = getMessageId(false);
 
     final msg = reqDHParams;
     final key = '${msg.nonce}-${msg.serverNonce}';
@@ -211,7 +211,7 @@ class _DiffieHellman {
     );
 
     final completer = Completer<SetClientDHParamsAnswerBase>();
-    final m = _idSeq.next(false);
+    final m = getMessageId(false);
 
     final msg = setClientDHParams;
     final key = '${msg.nonce}-${msg.serverNonce}';
@@ -270,7 +270,6 @@ class _DiffieHellman {
 
     _checkGoodPrime(dhPrime, answerObj.g);
 
-    _idSeq._lastSentMessageId = 0;
     //dcSession.serverTicksOffset = (answerObj.serverTime - localTime).Ticks;
 
     final salt = Uint8List(256);

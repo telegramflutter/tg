@@ -26,6 +26,10 @@ class _EncryptedTransformer {
     final length =
         Uint8List.fromList(temp).buffer.asByteData().getInt32(0, Endian.little);
 
+    if (length < 0) {
+      _read.clear();
+      return;
+    }
     if (l.length < length + 4) {
       return;
     }

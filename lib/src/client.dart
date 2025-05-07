@@ -5,16 +5,19 @@ class Client extends t.Client {
     required this.receiver,
     required this.sender,
     required this.obfuscation,
-    required this.session,
-  });
+    required Session? session,
+  }) : _session = session {
+    _idSeq._lastSentMessageId = session?.lastSentMessageId ?? 0;
+    _idSeq._seqno = session?.seqno ?? 0;
+  }
 
-  Session? session;
+  Session? _session;
 
   final Obfuscation obfuscation;
   final Stream<Uint8List> receiver;
   final Sink<List<int>> sender;
 
-  late final _EncryptedTransformer _trns;
+  late final _EncryptedTransformer? _trns;
 
   final _idSeq = _MessageIdSequenceGenerator();
 
@@ -24,8 +27,10 @@ class Client extends t.Client {
   // final List<int> _msgsToAck = [];
 
   final _streamController = StreamController<UpdatesBase>.broadcast();
+  final _sessionController = StreamController<Session>.broadcast();
 
   Stream<UpdatesBase> get stream => _streamController.stream;
+  Stream<Session> get session => _sessionController.stream;
 
   void _handleIncomingMessage(TlObject msg) {
     if (msg is UpdatesBase) {
@@ -83,24 +88,28 @@ class Client extends t.Client {
         obfuscation,
       );
 
-      final dh = _DiffieHellman(sender, uot.stream, obfuscation, _idSeq);
-      final ak = await dh.exchange();
+      final dh = _DiffieHellman(sender, uot.stream, obfuscation, _idSeq.next);
+      final authKey = await dh.exchange();
 
       await uot.dispose();
 
       final random = Random();
       final sessionId = random.nextInt(1 << 32);
 
-      final session = Session(id: sessionId, authKey: ak);
+      final session = Session(id: sessionId, authKey: authKey);
 
       return session;
     }
 
-    final s = session ??= await createSession();
+    final s = _session ??= await createSession();
 
-    _trns = _EncryptedTransformer(receiver, s.authKey, obfuscation);
+    _trns = _EncryptedTransformer(
+      receiver,
+      s.authKey,
+      obfuscation,
+    );
 
-    _trns.stream.listen((v) {
+    _trns?.stream.listen((v) {
       print(v);
       _handleIncomingMessage(v);
     });
@@ -108,9 +117,13 @@ class Client extends t.Client {
     return s;
   }
 
+  void dispose() async {
+    // await _trns?.dispose();
+  }
+
   @override
   Future<t.Result<t.TlObject>> invoke(t.TlMethod method) async {
-    final session = this.session ??= await connect();
+    final session = _session ??= await connect();
 
     final auth = session.authKey;
 
@@ -118,6 +131,11 @@ class Client extends t.Client {
 
     final completer = Completer<t.Result>();
     final m = _idSeq.next(preferEncryption);
+
+    session.lastSentMessageId = _idSeq._lastSentMessageId;
+    session.seqno = _idSeq._seqno;
+
+    _sessionController.add(session);
 
     // if (preferEncryption && _msgsToAck.isNotEmpty) {
     //   final ack = idSeq.next(false);
@@ -147,7 +165,7 @@ class Client extends t.Client {
     _pending[m.id] = completer;
     final buffer = auth.id == 0
         ? _encodeNoAuth(method, m)
-        : _encodeWithAuth(method, m, 10, auth);
+        : _encodeWithAuth(method, m, session.id, auth);
 
     obfuscation.send.encryptDecrypt(buffer, buffer.length);
     sender.add(Uint8List.fromList(buffer));
