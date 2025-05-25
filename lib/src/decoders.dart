@@ -12,26 +12,25 @@ class _EncryptedTransformer {
   final Stream<List<int>> _receiver;
   final Obfuscation? _obfuscation;
   final List<int> _read = [];
+  int? _length;
 
   void _readFrame(List<int> l) {
     _read.addAll(l);
-    if (l.length < 4) {
-      return;
+
+    if (_length == null && _read.length >= 4) {
+      final temp = _read.take(4).toList();
+      _obfuscation?.recv.encryptDecrypt(temp, 4);
+      _length = Uint8List.fromList(temp).buffer.asByteData().getInt32(0, Endian.little);
     }
 
-    final temp = _read.take(4).toList();
-
-    _obfuscation?.recv.encryptDecrypt(temp, 4);
-
-    final length =
-        Uint8List.fromList(temp).buffer.asByteData().getInt32(0, Endian.little);
-
-    if (l.length < length + 4) {
+    final length = _length;
+    if (length == null || _read.length < length + 4) {
       return;
     }
 
     final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
     _read.removeRange(0, length + 4);
+    _length = null;
 
     final frame = _Frame.parse(buffer, _obfuscation, _authKey);
     final seqno = frame.seqno;
@@ -63,26 +62,25 @@ class _UnEncryptedTransformer {
   final Stream<List<int>> _receiver;
   final Obfuscation? _obfuscation;
   final List<int> _read = [];
+  int? _length;
 
   void _readFrame(List<int> l) {
     _read.addAll(l);
-    if (l.length < 4) {
-      return;
+    if (_length == null && _read.length >= 4) {
+      final temp = _read.take(4).toList();
+      _obfuscation?.recv.encryptDecrypt(temp, 4);
+
+      _length = Uint8List.fromList(temp).buffer.asByteData().getInt32(0, Endian.little);
     }
 
-    final temp = _read.take(4).toList();
-
-    _obfuscation?.recv.encryptDecrypt(temp, 4);
-
-    final length =
-        Uint8List.fromList(temp).buffer.asByteData().getInt32(0, Endian.little);
-
-    if (l.length < length + 4) {
+    final length = _length;
+    if (length == null || _read.length < length + 4) {
       return;
     }
 
     final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
     _read.removeRange(0, length + 4);
+    _length = null;
 
     final frame = _Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
     final seqno = frame.seqno;
