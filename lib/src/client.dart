@@ -70,6 +70,10 @@ class Client extends t.Client {
 
       task?.complete(t.Result.ok(msg.result));
       _pending.remove(reqMsgId);
+    } else if (msg is GzipPacked) {
+      final gZippedData = GZipDecoder().decodeBytes(msg.packedData);
+      final newObj = BinaryReader(Uint8List.fromList(gZippedData)).readObject();
+      _handleIncomingMessage(newObj);
     }
   }
 
