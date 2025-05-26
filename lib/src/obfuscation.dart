@@ -80,39 +80,28 @@ class Obfuscation {
   final Uint8List preamble;
 }
 
-/// Implementation of AES-Counter algorithm.
 class AesCtr {
-  /// Constructor.
-  AesCtr(this.key, this.iv);
+  late final pc.StreamCipher _cipher;
 
-  /// Key.
-  final Uint8List key;
+  AesCtr(Uint8List key, Uint8List iv) {
+    final params = pc.ParametersWithIV(pc.KeyParameter(key), iv);
+    _cipher = pc.StreamCipher('AES/CTR')..init(true, params);
+  }
+  void encryptDecrypt(List<int> input, int length) {
+    assert(length <= input.length);
 
-  /// IV.
-  final Uint8List iv;
+    Uint8List buffer;
+    if (input is Uint8List) {
+      buffer = input;
+    } else {
+      buffer = Uint8List.fromList(input); // copy
+    }
 
-  final _ecount = Uint8List(16);
-  int _num = 0;
-
-  /// Transforms the input buffer.
-  void encryptDecrypt(List<int> buffer, int length) {
-    final encryptor = AES(Key(key), mode: AESMode.ecb);
+    final chunk = Uint8List.sublistView(buffer, 0, length);
+    final processed = _cipher.process(chunk);
 
     for (int i = 0; i < length; i++) {
-      if (_num == 0) {
-        final e = encryptor.encrypt(iv);
-
-        _ecount.setAll(0, e.bytes.take(16));
-
-        for (int n = 15; n >= 0; n--) {
-          if (++iv[n] != 0) {
-            break;
-          }
-        }
-      }
-
-      buffer[i] ^= _ecount[_num];
-      _num = (_num + 1) % 16;
+      input[i] = processed[i];
     }
   }
 }
