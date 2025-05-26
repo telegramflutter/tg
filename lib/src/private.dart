@@ -51,7 +51,7 @@ Uint8List _aesIgeEncryptDecrypt(
   bool encrypt,
 ) {
   assert(input.length % 16 == 0, 'AES_IGE input size not divisible by 16.');
-  final aes = AES(Key(keys.key), mode: AESMode.ecb, padding: null);
+  final aes = AesEcb(Key(keys.key));
 
   final output = Uint8List(input.length);
   final prevBytes = Uint8List.fromList(keys.iv);

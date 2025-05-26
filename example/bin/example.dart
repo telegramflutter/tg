@@ -1,69 +1,140 @@
-import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:t/t.dart' as t;
 import 'package:tg/tg.dart' as tg;
-import 'package:socks5_proxy/socks.dart';
+import 'package:socks5_proxy/socks_client.dart';
 
-void main(List<String> arguments) async {
-  final obf = tg.Obfuscation.random(false, 4);
+const apiId = 611335;
+const apiHash = 'd524b414d21f4d37f08684c1df41ac9c';
 
+var _dc = const t.DcOption(
+  ipv6: false,
+  mediaOnly: false,
+  tcpoOnly: false,
+  cdn: false,
+  static: false,
+  thisPortOnly: false,
+  //id: 2,
+  //ipAddress: '149.154.167.50',
+  id: 4,
+  ipAddress: '149.154.167.92',
+  // id: 2,
+  // ipAddress: '149.154.167.40',
+  port: 443,
+);
+
+Future<Socket> connect() async {
   final socket = await SocksTCPClient.connect(
     [
-      ProxySettings(InternetAddress.loopbackIPv4, 1080),
+      ProxySettings(InternetAddress.loopbackIPv4, 9909),
     ],
-    InternetAddress('149.154.167.50'),
-    443,
+    InternetAddress(_dc.ipAddress),
+    _dc.port,
   );
+
+  return socket;
+}
+
+void main() async {
+  print('Connecting...');
+  final socket = await connect();
+  final c = tg.Client(
+    receiver: socket,
+    sender: socket,
+    obfuscation: tg.Obfuscation.random(false, _dc.id),
+    session: loadSession(),
+  );
+
+  // c.session.listen((event) {
+  //   print(event);
+
+  //   File('session.json').writeAsStringSync(event.toString());
+  // });
+
+  c.stream.listen((event) {
+    print(event);
+  });
 
   print('Connected.');
 
-  final sender = StreamController<List<int>>();
-  final receiver = StreamController<Uint8List>();
+  final session = await c.connect();
+  print('Session: $session');
 
-  sender.stream.listen((v) {
-    print('SEND: ${hex(v)}');
-    socket.add(v);
-  });
+  await Future.delayed(const Duration(milliseconds: 100));
 
-  socket.listen((v) {
-    print('RECV: ${hex(v)}');
-    receiver.add(v);
-  });
-
-  final c = tg.Client(
-    apiId: 123456,
-    receiver: receiver.stream,
-    sender: sender.sink,
-    obfuscation: obf,
+  final cfg = await c.initConnection<t.Config>(
+    apiId: apiId,
+    deviceModel: 'Galaxy S24',
+    systemVersion: 'Android 14',
+    appVersion: '1.0.0',
+    systemLangCode: 'en',
+    langPack: '',
+    langCode: 'en',
+    query: const t.HelpGetConfig(),
   );
 
-  sender.add(obf.preamble);
-  await Future.delayed(Duration(seconds: 1));
-  final resPQ = await c.reqPqMulti();
+  print('Config: $cfg');
 
-  final newNonce = t.Int256.random();
+  print('Phone Number: ');
+  final phoneNumber = stdin.readLineSync() ?? '';
 
-  await Future.delayed(Duration(seconds: 1));
-  final serverDHparams = await c.reqDHParams(resPQ, newNonce);
+  final sendCodeResponse = await c.auth.sendCode(
+    apiId: apiId,
+    apiHash: apiHash,
+    phoneNumber: phoneNumber,
+    settings: const t.CodeSettings(
+      allowFlashcall: false,
+      currentNumber: true,
+      allowAppHash: false,
+      allowMissedCall: false,
+      allowFirebase: false,
+      unknownNumber: false,
+    ),
+  );
 
-  await Future.delayed(Duration(seconds: 1));
-  final authKey =
-      await c.createAuthenticationKey(resPQ, serverDHparams, newNonce);
+  print('Send Code: $sendCodeResponse');
 
-  print(authKey);
+  final sentCodeResult = sendCodeResponse.result as t.AuthSentCode;
 
-  while (true) {
-    await Future.delayed(Duration(seconds: 1));
+  stdout.write('Login code: ');
+  final phoneCode = stdin.readLineSync();
+
+  final signInResponse = await c.auth.signIn(
+    phoneCodeHash: sentCodeResult.phoneCodeHash,
+    phoneNumber: phoneNumber,
+    phoneCode: phoneCode,
+  );
+
+  print('SignIn: $signInResponse');
+
+  if (signInResponse.error != null) {
+    final accountPasswordResponse = await c.account.getPassword();
+    print('Get Password: $accountPasswordResponse');
+    final accountPassword = accountPasswordResponse.result as t.AccountPassword;
+
+    if (accountPassword.hint != null) {
+      stdout.write('Password (Hint: ${accountPassword.hint}): ');
+    } else {
+      stdout.write('Password: ');
+    }
+
+    final passwordInput = stdin.readLineSync() ?? '';
+
+    final password = tg.check2FA(accountPassword, passwordInput);
+    final checkPasswordResponse =
+        await c.auth.checkPassword(password: password);
+    print(checkPasswordResponse);
   }
 }
 
-String hex(Iterable<int> v) {
-  final h = v
-      .map((vv) => vv.toRadixString(16).padLeft(2, '0'))
-      .join('')
-      .toUpperCase();
+t.Session? loadSession() {
+  try {
+    final text = File('session.json').readAsStringSync();
+    final jsn = jsonDecode(text);
 
-  return '0x$h';
+    return t.Session.fromJson(jsn);
+  } catch (e) {
+    return null;
+  }
 }

@@ -37,34 +37,6 @@ extension _List<T> on List<T> {
   }
 }
 
-extension _AES on AES {
-  void encrypt2(
-    Uint8List input,
-    int inputOffset,
-    int inputCount,
-    Uint8List output,
-    int outputOffset,
-  ) {
-    final inn = input.skip(inputOffset).take(inputCount).toList();
-    final enc = encrypt(Uint8List.fromList(inn));
-
-    output.setRange(outputOffset, outputOffset + enc.bytes.length, enc.bytes);
-  }
-
-  void decrypt2(
-    Uint8List input,
-    int inputOffset,
-    int inputCount,
-    Uint8List output,
-    int outputOffset,
-  ) {
-    final inn = input.skip(inputOffset).take(inputCount).toList();
-    final enc = decrypt(Encrypted(Uint8List.fromList(inn)));
-
-    output.setRange(outputOffset, outputOffset + enc.length, enc);
-  }
-}
-
 // 15 is the minimum recommended by Telegram
 // 64 is OpenSSL default for 2048-bits numbers
 const int _millerRabinIterations = 64;

@@ -1,6 +1,6 @@
-## 0.0.7
+## 0.0.8
 
-- Dependecies updated.
+- Handle GzipPacked messages and Replace built-in AES-CTR with one from Pointycastle.
 
 ## 0.0.4
 
