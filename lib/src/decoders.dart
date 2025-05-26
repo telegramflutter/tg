@@ -20,7 +20,10 @@ class _EncryptedTransformer {
     if (_length == null && _read.length >= 4) {
       final temp = _read.take(4).toList();
       _obfuscation?.recv.encryptDecrypt(temp, 4);
-      _length = Uint8List.fromList(temp).buffer.asByteData().getInt32(0, Endian.little);
+      _length = Uint8List.fromList(temp)
+          .buffer
+          .asByteData()
+          .getInt32(0, Endian.little);
     }
 
     final length = _length;
@@ -70,7 +73,10 @@ class _UnEncryptedTransformer {
       final temp = _read.take(4).toList();
       _obfuscation?.recv.encryptDecrypt(temp, 4);
 
-      _length = Uint8List.fromList(temp).buffer.asByteData().getInt32(0, Endian.little);
+      _length = Uint8List.fromList(temp)
+          .buffer
+          .asByteData()
+          .getInt32(0, Endian.little);
     }
 
     final length = _length;
