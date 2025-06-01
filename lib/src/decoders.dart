@@ -17,34 +17,30 @@ class _EncryptedTransformer {
   void _readFrame(List<int> l) {
     _read.addAll(l);
 
-    if (_length == null && _read.length >= 4) {
-      final temp = _read.take(4).toList();
-      _obfuscation?.recv.encryptDecrypt(temp, 4);
-      _length = Uint8List.fromList(temp)
-          .buffer
-          .asByteData()
-          .getInt32(0, Endian.little);
+    while (true) {
+      if (_length == null && _read.length >= 4) {
+        final temp = _read.take(4).toList();
+        _obfuscation?.recv.encryptDecrypt(temp, 4);
+        _length = ByteData.sublistView(Uint8List.fromList(temp))
+            .getInt32(0, Endian.little);
+      }
+
+      final length = _length;
+      if (length == null || _read.length < length + 4) break;
+
+      final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
+      _read.removeRange(0, length + 4);
+      _length = null;
+
+      final frame = _Frame.parse(buffer, _obfuscation, _authKey);
+      final seqno = frame.seqno;
+
+      if (seqno != null && (seqno & 1) != 0) {
+        //_msgsToAck.add(frame.messageId);
+      }
+
+      _streamController.add(frame.message);
     }
-
-    final length = _length;
-    if (length == null || _read.length < length + 4) {
-      return;
-    }
-
-    final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
-    _read.removeRange(0, length + 4);
-    _length = null;
-
-    final frame = _Frame.parse(buffer, _obfuscation, _authKey);
-    final seqno = frame.seqno;
-
-    if (seqno != null && (seqno & 1) != 0) {
-      //_msgsToAck.add(frame.messageId);
-    }
-
-    final msg = frame.message;
-
-    _streamController.add(msg);
   }
 }
 
@@ -69,34 +65,30 @@ class _UnEncryptedTransformer {
 
   void _readFrame(List<int> l) {
     _read.addAll(l);
-    if (_length == null && _read.length >= 4) {
-      final temp = _read.take(4).toList();
-      _obfuscation?.recv.encryptDecrypt(temp, 4);
+    while (true) {
+      if (_length == null && _read.length >= 4) {
+        final temp = _read.take(4).toList();
+        _obfuscation?.recv.encryptDecrypt(temp, 4);
 
-      _length = Uint8List.fromList(temp)
-          .buffer
-          .asByteData()
-          .getInt32(0, Endian.little);
-    }
+        _length = ByteData.sublistView(Uint8List.fromList(temp))
+            .getInt32(0, Endian.little);
+      }
 
-    final length = _length;
-    if (length == null || _read.length < length + 4) {
-      return;
-    }
+      final length = _length;
+      if (length == null || _read.length < length + 4) break;
 
-    final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
-    _read.removeRange(0, length + 4);
-    _length = null;
+      final buffer = Uint8List.fromList(_read.skip(4).take(length).toList());
+      _read.removeRange(0, length + 4);
+      _length = null;
 
-    final frame = _Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
-    final seqno = frame.seqno;
+      final frame = _Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
+      final seqno = frame.seqno;
 
-    if (seqno != null && (seqno & 1) != 0) {
-      //_msgsToAck.add(frame.messageId);
-    }
+      if (seqno != null && (seqno & 1) != 0) {
+        //_msgsToAck.add(frame.messageId);
+      }
 
-    final msg = frame.message;
-
-    _streamController.add(msg);
+        _streamController.add(frame.message);
+      }
   }
 }
