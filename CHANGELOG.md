@@ -1,3 +1,7 @@
+## 0.0.9
+
+- Handle multiple frames in a single packet.
+
 ## 0.0.8
 
 - Handle GzipPacked messages and Replace built-in AES-CTR with one from Pointycastle.
