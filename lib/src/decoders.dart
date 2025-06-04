@@ -81,14 +81,15 @@ class _UnEncryptedTransformer {
       _read.removeRange(0, length + 4);
       _length = null;
 
-      final frame = _Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
+      final frame =
+          _Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
       final seqno = frame.seqno;
 
       if (seqno != null && (seqno & 1) != 0) {
         //_msgsToAck.add(frame.messageId);
       }
 
-        _streamController.add(frame.message);
-      }
+      _streamController.add(frame.message);
+    }
   }
 }

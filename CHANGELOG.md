@@ -1,3 +1,7 @@
+## 0.0.10
+
+- Format code and update dependency version.
+
 ## 0.0.9
 
 - Handle multiple frames in a single packet.
