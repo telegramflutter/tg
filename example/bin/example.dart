@@ -128,12 +128,12 @@ void main() async {
   }
 }
 
-t.Session? loadSession() {
+tg.Session? loadSession() {
   try {
     final text = File('session.json').readAsStringSync();
     final jsn = jsonDecode(text);
 
-    return t.Session.fromJson(jsn);
+    return tg.Session.fromJson(jsn);
   } catch (e) {
     return null;
   }
