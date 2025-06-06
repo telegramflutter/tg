@@ -1,3 +1,7 @@
+## 0.0.11
+
+- AuthorizationKey and Session classes moved here from `t`.
+
 ## 0.0.10
 
 - Format code and update dependency version.

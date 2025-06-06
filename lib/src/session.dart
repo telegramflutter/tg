@@ -14,7 +14,7 @@ class Session {
   factory Session.fromJson(Map<String, dynamic> data) {
     final id = data['id'] as int;
     final authKeyJson = Map<String, dynamic>.from(data['authKey']);
-    final authKey = t.AuthorizationKey.fromJson(authKeyJson);
+    final authKey = AuthorizationKey.fromJson(authKeyJson);
     final seqno = data['seqno'] as int;
     final lastSentMessageId = data['lastSentMessageId'] as int;
 
