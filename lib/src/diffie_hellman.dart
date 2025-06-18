@@ -325,10 +325,11 @@ class _DiffieHellman {
     final saltRight = BinaryReader(Uint8List.fromList(resPQ.serverNonce.data))
         .readInt64(false);
 
-    final ak = AuthorizationKey(
+    final ak = AuthorizationKey._(
       authKeyID,
       authKey,
       saltLeft ^ saltRight,
+      _idSeq,
     );
 
     return ak;

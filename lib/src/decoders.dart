@@ -1,16 +1,15 @@
 part of '../tg.dart';
 
 class _EncryptedTransformer {
-  _EncryptedTransformer(this._receiver, this._authKey, this._obfuscation) {
-    _receiver.listen(_readFrame);
+  _EncryptedTransformer(this.client) {
+    client.receiver.listen(_readFrame);
   }
 
   final _streamController = StreamController<TlObject>.broadcast();
   Stream<TlObject> get stream => _streamController.stream;
 
-  final AuthorizationKey _authKey;
-  final Stream<List<int>> _receiver;
-  final Obfuscation? _obfuscation;
+  final Client client;
+
   final List<int> _read = [];
   int? _length;
 
@@ -20,7 +19,7 @@ class _EncryptedTransformer {
     while (true) {
       if (_length == null && _read.length >= 4) {
         final temp = _read.take(4).toList();
-        _obfuscation?.recv.encryptDecrypt(temp, 4);
+        client.obfuscation.recv.encryptDecrypt(temp, 4);
         _length = ByteData.sublistView(Uint8List.fromList(temp))
             .getInt32(0, Endian.little);
       }
@@ -32,11 +31,16 @@ class _EncryptedTransformer {
       _read.removeRange(0, length + 4);
       _length = null;
 
-      final frame = _Frame.parse(buffer, _obfuscation, _authKey);
+      final frame = _Frame.parse(
+        buffer,
+        client.obfuscation,
+        client.authorizationKey.key,
+      );
+
       final seqno = frame.seqno;
 
       if (seqno != null && (seqno & 1) != 0) {
-        //_msgsToAck.add(frame.messageId);
+        client._msgsToAck.add(frame.messageId);
       }
 
       _streamController.add(frame.message);
@@ -81,8 +85,7 @@ class _UnEncryptedTransformer {
       _read.removeRange(0, length + 4);
       _length = null;
 
-      final frame =
-          _Frame.parse(buffer, _obfuscation, AuthorizationKey.empty());
+      final frame = _Frame.parse(buffer, _obfuscation, []);
       final seqno = frame.seqno;
 
       if (seqno != null && (seqno & 1) != 0) {

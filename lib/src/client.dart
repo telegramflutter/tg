@@ -5,23 +5,46 @@ class Client extends t.Client {
     required this.receiver,
     required this.sender,
     required this.obfuscation,
-    required this.session,
-  });
+    required this.authorizationKey,
+  }) {
+    _transformer = _EncryptedTransformer(this);
 
-  Session? session;
+    _transformer.stream.listen((v) {
+      _handleIncomingMessage(v);
+    });
+  }
 
+  static Future<AuthorizationKey> authorize(
+    Stream<Uint8List> receiver,
+    Sink<List<int>> sender,
+    Obfuscation obfuscation,
+  ) async {
+    final uot = _UnEncryptedTransformer(
+      receiver,
+      obfuscation,
+    );
+
+    final idSeq = _MessageIdSequenceGenerator();
+    final dh = _DiffieHellman(sender, uot.stream, obfuscation, idSeq);
+    final ak = await dh.exchange();
+
+    await uot.dispose();
+    return ak;
+  }
+
+  void start() {
+    sender.add(obfuscation.preamble);
+  }
+
+  final AuthorizationKey authorizationKey;
   final Obfuscation obfuscation;
   final Stream<Uint8List> receiver;
   final Sink<List<int>> sender;
 
-  late final _EncryptedTransformer _trns;
+  late final _EncryptedTransformer _transformer;
 
-  final _idSeq = _MessageIdSequenceGenerator();
-
-  //final Set<int> _msgsToAck = {};
-
+  final Set<int> _msgsToAck = {};
   final Map<int, Completer<t.Result>> _pending = {};
-  // final List<int> _msgsToAck = [];
 
   final _streamController = StreamController<UpdatesBase>.broadcast();
 
@@ -77,80 +100,49 @@ class Client extends t.Client {
     }
   }
 
-  Future<Session> connect() async {
-    sender.add(obfuscation.preamble);
-    await Future.delayed(Duration(milliseconds: 100));
-
-    Future<Session> createSession() async {
-      final uot = _UnEncryptedTransformer(
-        receiver,
-        obfuscation,
-      );
-
-      final dh = _DiffieHellman(sender, uot.stream, obfuscation, _idSeq);
-      final ak = await dh.exchange();
-
-      await uot.dispose();
-
-      final random = Random();
-      final sessionId = random.nextInt(1 << 32);
-
-      final session = Session(id: sessionId, authKey: ak);
-
-      return session;
-    }
-
-    final s = session ??= await createSession();
-
-    _trns = _EncryptedTransformer(receiver, s.authKey, obfuscation);
-
-    _trns.stream.listen((v) {
-      _handleIncomingMessage(v);
-    });
-
-    return s;
-  }
-
   @override
   Future<t.Result<t.TlObject>> invoke(t.TlMethod method) async {
-    final session = this.session ??= await connect();
-
-    final auth = session.authKey;
-
-    final preferEncryption = auth.id != 0;
+    final preferEncryption = authorizationKey.id != 0;
+    final idSeq = authorizationKey._idSeq;
 
     final completer = Completer<t.Result>();
-    final m = _idSeq.next(preferEncryption);
+    final m = idSeq.next(preferEncryption);
 
-    // if (preferEncryption && _msgsToAck.isNotEmpty) {
-    //   final ack = idSeq.next(false);
-    //   final ackMsg = MsgsAck(msgIds: _msgsToAck.toList());
-    //   _msgsToAck.clear();
+    if (preferEncryption && _msgsToAck.isNotEmpty) {
+      final ack = idSeq.next(false);
+      final ackMsg = MsgsAck(msgIds: _msgsToAck.toList());
+      _msgsToAck.clear();
 
-    //   final container = MsgContainer(
-    //     messages: [
-    //       Msg(
-    //         msgId: m.msgId,
-    //         seqno: m.seqno,
-    //         bytes: 0,
-    //         body: msg,
-    //       ),
-    //       Msg(
-    //         msgId: ack.msgId,
-    //         seqno: ack.seqno,
-    //         bytes: 0,
-    //         body: ackMsg,
-    //       )
-    //     ],
-    //   );
+      final container = MsgContainer(
+        messages: [
+          Msg(
+            msgId: m.id,
+            seqno: m.seqno,
+            bytes: 0,
+            body: method,
+          ),
+          Msg(
+            msgId: ack.id,
+            seqno: ack.seqno,
+            bytes: 0,
+            body: ackMsg,
+          )
+        ],
+      );
 
-    //   return send(container, false);
-    // }
+      void nop(TlObject o) {
+        //
+      }
+
+      nop(container);
+
+      //return send(container, false);
+    }
 
     _pending[m.id] = completer;
-    final buffer = auth.id == 0
+    final buffer = authorizationKey.id == 0
         ? _encodeNoAuth(method, m)
-        : _encodeWithAuth(method, m, 10, auth);
+        : _encodeWithAuth(method, m, 10, authorizationKey);
 
     obfuscation.send.encryptDecrypt(buffer, buffer.length);
     sender.add(Uint8List.fromList(buffer));

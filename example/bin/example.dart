@@ -39,11 +39,19 @@ Future<Socket> connect() async {
 void main() async {
   print('Connecting...');
   final socket = await connect();
+  final obfuscation = tg.Obfuscation.random(false, _dc.id);
+
+  final authKey = loadAuthorizationKey() ??
+      await tg.Client.authorize(socket, socket, obfuscation);
+
+  File('session.json').writeAsStringSync(authKey.toString());
+  print('Auth Key: $authKey');
+
   final c = tg.Client(
     receiver: socket,
     sender: socket,
-    obfuscation: tg.Obfuscation.random(false, _dc.id),
-    session: loadSession(),
+    obfuscation: obfuscation,
+    authorizationKey: authKey,
   );
 
   // c.session.listen((event) {
@@ -58,8 +66,7 @@ void main() async {
 
   print('Connected.');
 
-  final session = await c.connect();
-  print('Session: $session');
+  c.start();
 
   await Future.delayed(const Duration(milliseconds: 100));
 
@@ -128,12 +135,12 @@ void main() async {
   }
 }
 
-tg.Session? loadSession() {
+tg.AuthorizationKey? loadAuthorizationKey() {
   try {
     final text = File('session.json').readAsStringSync();
     final jsn = jsonDecode(text);
 
-    return tg.Session.fromJson(jsn);
+    return tg.AuthorizationKey.fromJson(jsn);
   } catch (e) {
     return null;
   }

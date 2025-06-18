@@ -3,7 +3,12 @@ part of '../tg.dart';
 /// Authorization Key.
 class AuthorizationKey {
   /// Constructor.
-  const AuthorizationKey(this.id, this.key, this.salt)
+  AuthorizationKey(this.id, this.key, this.salt)
+      : _idSeq = _MessageIdSequenceGenerator(),
+        assert(id != 0, 'Id must not be zero.'),
+        assert(key.length == 256, 'Key must be 256 bytes.');
+
+  AuthorizationKey._(this.id, this.key, this.salt, this._idSeq)
       : assert(id != 0, 'Id must not be zero.'),
         assert(key.length == 256, 'Key must be 256 bytes.');
 
@@ -18,11 +23,7 @@ class AuthorizationKey {
     return AuthorizationKey(id, key, salt);
   }
 
-  /// Empty constructor.
-  const AuthorizationKey.empty()
-      : id = 0,
-        key = const [],
-        salt = 0;
+  final _MessageIdSequenceGenerator _idSeq;
 
   ///  Auth Key Id (int64).
   final int id;

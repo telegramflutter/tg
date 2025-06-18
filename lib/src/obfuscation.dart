@@ -8,9 +8,7 @@ class Obfuscation {
   factory Obfuscation.random(bool padded, int dcId, [Uint8List? secret]) {
     final random = Uint8List(58);
 
-    do {
-      _rng.getBytes(random, 0, 58);
-    } while (false);
+    _rng.getBytes(random, 0, 58);
 
 // TODO (xclud):
     // while (preamble[0] == 0xef ||
