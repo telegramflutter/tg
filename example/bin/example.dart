@@ -54,12 +54,6 @@ void main() async {
     authorizationKey: authKey,
   );
 
-  // c.session.listen((event) {
-  //   print(event);
-
-  //   File('session.json').writeAsStringSync(event.toString());
-  // });
-
   c.stream.listen((event) {
     print(event);
   });

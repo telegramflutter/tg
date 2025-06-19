@@ -40,7 +40,7 @@ class _EncryptedTransformer {
       final seqno = frame.seqno;
 
       if (seqno != null && (seqno & 1) != 0) {
-        client._msgsToAck.add(frame.messageId);
+        client.authorizationKey._msgsToAck.add(frame.messageId);
       }
 
       _streamController.add(frame.message);
@@ -49,7 +49,11 @@ class _EncryptedTransformer {
 }
 
 class _UnEncryptedTransformer {
-  _UnEncryptedTransformer(this._receiver, this._obfuscation) {
+  _UnEncryptedTransformer(
+    this._receiver,
+    this._msgsToAck,
+    this._obfuscation,
+  ) {
     _subscription = _receiver.listen(_readFrame);
   }
 
@@ -64,6 +68,7 @@ class _UnEncryptedTransformer {
 
   final Stream<List<int>> _receiver;
   final Obfuscation? _obfuscation;
+  final Set<int> _msgsToAck;
   final List<int> _read = [];
   int? _length;
 
@@ -89,7 +94,7 @@ class _UnEncryptedTransformer {
       final seqno = frame.seqno;
 
       if (seqno != null && (seqno & 1) != 0) {
-        //_msgsToAck.add(frame.messageId);
+        _msgsToAck.add(frame.messageId);
       }
 
       _streamController.add(frame.message);

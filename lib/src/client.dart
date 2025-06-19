@@ -19,13 +19,22 @@ class Client extends t.Client {
     Sink<List<int>> sender,
     Obfuscation obfuscation,
   ) async {
+    final Set<int> msgsToAck = {};
+
     final uot = _UnEncryptedTransformer(
       receiver,
+      msgsToAck,
       obfuscation,
     );
 
     final idSeq = _MessageIdSequenceGenerator();
-    final dh = _DiffieHellman(sender, uot.stream, obfuscation, idSeq);
+    final dh = _DiffieHellman(
+      sender,
+      uot.stream,
+      obfuscation,
+      idSeq,
+      msgsToAck,
+    );
     final ak = await dh.exchange();
 
     await uot.dispose();
@@ -43,7 +52,6 @@ class Client extends t.Client {
 
   late final _EncryptedTransformer _transformer;
 
-  final Set<int> _msgsToAck = {};
   final Map<int, Completer<t.Result>> _pending = {};
 
   final _streamController = StreamController<UpdatesBase>.broadcast();
@@ -104,14 +112,15 @@ class Client extends t.Client {
   Future<t.Result<t.TlObject>> invoke(t.TlMethod method) async {
     final preferEncryption = authorizationKey.id != 0;
     final idSeq = authorizationKey._idSeq;
+    final msgsToAck = authorizationKey._msgsToAck;
 
     final completer = Completer<t.Result>();
     final m = idSeq.next(preferEncryption);
 
-    if (preferEncryption && _msgsToAck.isNotEmpty) {
+    if (preferEncryption && msgsToAck.isNotEmpty) {
       final ack = idSeq.next(false);
-      final ackMsg = MsgsAck(msgIds: _msgsToAck.toList());
-      _msgsToAck.clear();
+      final ackMsg = MsgsAck(msgIds: msgsToAck.toList());
+      msgsToAck.clear();
 
       final container = MsgContainer(
         messages: [
