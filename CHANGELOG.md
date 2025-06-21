@@ -1,3 +1,7 @@
+## 0.0.12
+
+ - Better Session and AuthorizationKey management.
+
 ## 0.0.11
 
 - AuthorizationKey and Session classes moved here from `t`.

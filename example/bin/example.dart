@@ -27,11 +27,16 @@ var _dc = const t.DcOption(
 Future<Socket> connect() async {
   final socket = await SocksTCPClient.connect(
     [
-      ProxySettings(InternetAddress.loopbackIPv4, 9909),
+      ProxySettings(InternetAddress.loopbackIPv4, 1080),
     ],
     InternetAddress(_dc.ipAddress),
     _dc.port,
   );
+
+  // final socket = await Socket.connect(
+  //   _dc.ipAddress,
+  //   _dc.port,
+  // );
 
   return socket;
 }
