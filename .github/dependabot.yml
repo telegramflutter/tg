@@ -7,8 +7,8 @@ updates:
       interval: weekly
       time: "09:00"
     open-pull-requests-limit: 5
-  - package-ecosystem: "gradle"
-    directory: "/example/android"
-    schedule:
-      interval: weekly
-      time: "09:00"
+  # - package-ecosystem: "gradle"
+  #   directory: "/example/android"
+  #   schedule:
+  #     interval: weekly
+  #     time: "09:00"
