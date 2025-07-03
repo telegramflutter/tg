@@ -15,7 +15,7 @@ InputCheckPasswordSRP check2FA(
           as PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow;
 
   if (algo == newAlgo) {
-    // TODO
+    // TODO (xclud):
     // final saltRandom = Uint8List(32);
     // _rng.getBytes(saltRandom);
     // final salt1 = [

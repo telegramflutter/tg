@@ -1,4 +1,8 @@
-## 0.0.12
+## 0.0.13
+
+ - Added a working example.
+ 
+ ## 0.0.12
 
  - Better Session and AuthorizationKey management.
 

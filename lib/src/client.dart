@@ -2,12 +2,16 @@ part of '../tg.dart';
 
 class Client extends t.Client {
   Client({
-    required this.receiver,
-    required this.sender,
+    required this.socket,
     required this.obfuscation,
     required this.authorizationKey,
+    required this.idGenerator,
   }) {
-    _transformer = _EncryptedTransformer(this);
+    _transformer = _EncryptedTransformer(
+      socket.receiver,
+      obfuscation,
+      authorizationKey,
+    );
 
     _transformer.stream.listen((v) {
       _handleIncomingMessage(v);
@@ -15,24 +19,23 @@ class Client extends t.Client {
   }
 
   static Future<AuthorizationKey> authorize(
-    Stream<Uint8List> receiver,
-    Sink<List<int>> sender,
+    SocketAbstraction socket,
     Obfuscation obfuscation,
+    MessageIdGenerator idGenerator,
   ) async {
     final Set<int> msgsToAck = {};
 
     final uot = _UnEncryptedTransformer(
-      receiver,
+      socket.receiver,
       msgsToAck,
       obfuscation,
     );
 
-    final idSeq = _MessageIdSequenceGenerator();
     final dh = _DiffieHellman(
-      sender,
+      socket,
       uot.stream,
       obfuscation,
-      idSeq,
+      idGenerator,
       msgsToAck,
     );
     final ak = await dh.exchange();
@@ -41,14 +44,10 @@ class Client extends t.Client {
     return ak;
   }
 
-  void start() {
-    sender.add(obfuscation.preamble);
-  }
-
   final AuthorizationKey authorizationKey;
   final Obfuscation obfuscation;
-  final Stream<Uint8List> receiver;
-  final Sink<List<int>> sender;
+  final SocketAbstraction socket;
+  final MessageIdGenerator idGenerator;
 
   late final _EncryptedTransformer _transformer;
 
@@ -111,14 +110,13 @@ class Client extends t.Client {
   @override
   Future<t.Result<t.TlObject>> invoke(t.TlMethod method) async {
     final preferEncryption = authorizationKey.id != 0;
-    final idSeq = authorizationKey._idSeq;
     final msgsToAck = authorizationKey._msgsToAck;
 
     final completer = Completer<t.Result>();
-    final m = idSeq.next(preferEncryption);
+    final m = idGenerator._next(preferEncryption);
 
     if (preferEncryption && msgsToAck.isNotEmpty) {
-      final ack = idSeq.next(false);
+      final ack = idGenerator._next(false);
       final ackMsg = MsgsAck(msgIds: msgsToAck.toList());
       msgsToAck.clear();
 
@@ -145,7 +143,7 @@ class Client extends t.Client {
 
       nop(container);
 
-      //return send(container, false);
+      //return invoke(container, false);
     }
 
     _pending[m.id] = completer;
@@ -154,7 +152,7 @@ class Client extends t.Client {
         : _encodeWithAuth(method, m, 10, authorizationKey);
 
     obfuscation.send.encryptDecrypt(buffer, buffer.length);
-    sender.add(Uint8List.fromList(buffer));
+    await socket.send(buffer);
 
     return completer.future;
   }

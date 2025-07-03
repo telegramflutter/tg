@@ -62,12 +62,12 @@ Uint8List _encodeWithAuth(
   return Uint8List.fromList(buffer);
 }
 
-class _MessageIdSequenceGenerator {
+class MessageIdGenerator {
   int _lastSentMessageId = 0;
   int _seqno = 0;
   int serverTicksOffset = 0;
 
-  _IdSeq next(bool preferEncryption) {
+  _IdSeq _next(bool preferEncryption) {
     var msgId =
         DateTime.now().toUtc().ticks + serverTicksOffset - 621355968000000000;
     msgId = msgId * 428 +

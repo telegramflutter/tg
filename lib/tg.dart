@@ -30,3 +30,4 @@ part 'src/constants.dart';
 part 'src/obfuscation.dart';
 part 'src/telegram_client.dart';
 part 'src/auth_key.dart';
+part 'src/socket_abstraction.dart';

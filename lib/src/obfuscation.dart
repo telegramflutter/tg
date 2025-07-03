@@ -8,14 +8,14 @@ class Obfuscation {
   factory Obfuscation.random(bool padded, int dcId, [Uint8List? secret]) {
     final random = Uint8List(58);
 
-    _rng.getBytes(random, 0, 58);
+    _rng.getBytes(random);
 
 // TODO (xclud):
     // while (preamble[0] == 0xef ||
     // 	BinaryPrimitives.ReadUInt32LittleEndian(preamble) is 0x44414548 or 0x54534f50 or 0x20544547 or 0x4954504f or 0x02010316 or 0xdddddddd or 0xeeeeeeee ||
     // 	BinaryPrimitives.ReadInt32LittleEndian(preamble.AsSpan(4)) == 0);
 
-    return Obfuscation.preamble(random, padded, dcId);
+    return Obfuscation.preamble(random, padded, dcId, secret);
   }
 
   /// Generate an obfuscator from a pre-computed preamble.
@@ -88,15 +88,8 @@ class AesCtr {
   void encryptDecrypt(List<int> input, int length) {
     assert(length <= input.length);
 
-    Uint8List buffer;
-    if (input is Uint8List) {
-      buffer = input;
-    } else {
-      buffer = Uint8List.fromList(input); // copy
-    }
-
-    final chunk = Uint8List.sublistView(buffer, 0, length);
-    final processed = _cipher.process(chunk);
+    final copy = Uint8List.fromList(input);
+    final processed = _cipher.process(copy);
 
     for (int i = 0; i < length; i++) {
       input[i] = processed[i];
