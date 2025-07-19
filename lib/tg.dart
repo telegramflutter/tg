@@ -31,3 +31,4 @@ part 'src/obfuscation.dart';
 part 'src/telegram_client.dart';
 part 'src/auth_key.dart';
 part 'src/socket_abstraction.dart';
+part 'src/session_manager.dart';

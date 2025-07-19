@@ -6,6 +6,7 @@ class Client extends t.Client {
     required this.obfuscation,
     required this.authorizationKey,
     required this.idGenerator,
+    this.sessionInfoManager,
   }) {
     _transformer = _EncryptedTransformer(
       socket.receiver,
@@ -17,6 +18,8 @@ class Client extends t.Client {
       _handleIncomingMessage(v);
     });
   }
+
+  final SessionInfoManager? sessionInfoManager;
 
   static Future<AuthorizationKey> authorize(
     SocketAbstraction socket,
@@ -153,6 +156,10 @@ class Client extends t.Client {
 
     obfuscation.send.encryptDecrypt(buffer, buffer.length);
     await socket.send(buffer);
+
+    if (sessionInfoManager != null) {
+      await sessionInfoManager!.updateSeqno(m.id, m.seqno);
+    }
 
     return completer.future;
   }
