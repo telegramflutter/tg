@@ -5,6 +5,7 @@ import 'package:example/io_socket.dart';
 import 'package:t/t.dart' as t;
 import 'package:tg/tg.dart' as tg;
 import 'package:socks5_proxy/socks_client.dart';
+import 'package:example/session_info_manager.dart' show SessionInfoManager;
 
 const apiId = 611335;
 const apiHash = 'd524b414d21f4d37f08684c1df41ac9c';
@@ -67,24 +68,38 @@ class Telegram {
 
     _log('Connected.');
     final obfuscation = tg.Obfuscation.random(false, _dc.id);
-    final idGenerator = tg.MessageIdGenerator();
+    
 
     await socket.send(obfuscation.preamble);
 
-    final loaded = loadSession();
+    final loadedAuthKey = loadSession();
+    var lastSentMessageId = 0, seqno = 0;
 
-    final authKey = loaded ??
+    if (loadedAuthKey != null) {
+      final sessionInfoManager = SessionInfoManager(authorizationKey: loadedAuthKey);
+      (lastSentMessageId, seqno) = await sessionInfoManager.getSeqno(authorizationKey: loadedAuthKey);
+    }
+
+    final idGenerator = tg.MessageIdGenerator(
+      lastSentMessageId: lastSentMessageId,
+      seqno: seqno,
+    );
+
+    final authKey = loadedAuthKey ??
         await tg.Client.authorize(
           socket,
           obfuscation,
           idGenerator,
         );
 
+    final sessionInfoManager = SessionInfoManager(authorizationKey: authKey);
+
     final client = tg.Client(
       socket: socket,
       obfuscation: obfuscation,
       authorizationKey: authKey,
       idGenerator: idGenerator,
+      sessionInfoManager: sessionInfoManager,
     );
 
     // final config = await client.help.getConfig();
