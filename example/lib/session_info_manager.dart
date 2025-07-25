@@ -12,13 +12,12 @@ class SessionInfoManager extends tg.SessionInfoManager {
   late final String  prefKey;
 
   @override
-  Future<void> updateSeqno(int id, int seqno) async {
+  Future<void> updateSeqno(int id, int seqnoCounter) async {
     final prefs = await SharedPreferences.getInstance();
-    
-    prefs.setInt(prefKey, seqno);
+    prefs.setString(prefKey, '$id,$seqnoCounter');
   }
 
-  Future<(int id, int seqno)> getSeqno({ tg.AuthorizationKey? authorizationKey }) async {
+  Future<(int id, int seqnoCounter)> getSeqno({ tg.AuthorizationKey? authorizationKey }) async {
     final prefs = await SharedPreferences.getInstance();
     final seqno = prefs.getString(prefKey);
 

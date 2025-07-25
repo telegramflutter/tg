@@ -158,7 +158,7 @@ class Client extends t.Client {
     await socket.send(buffer);
 
     if (sessionInfoManager != null) {
-      await sessionInfoManager!.updateSeqno(m.id, m.seqno);
+      await sessionInfoManager!.updateSeqno(m.id, idGenerator.seqnoCounter);
     }
 
     return completer.future;

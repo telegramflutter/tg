@@ -5,5 +5,5 @@ abstract class SessionInfoManager {
     required AuthorizationKey authorizationKey,
   });
 
-  Future<void> updateSeqno(int id, int seqno);
+  Future<void> updateSeqno(int id, int seqnoCounter);
 }

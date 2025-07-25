@@ -82,7 +82,7 @@ class Telegram {
 
     final idGenerator = tg.MessageIdGenerator(
       lastSentMessageId: lastSentMessageId,
-      seqno: seqno,
+      seqnoCounter: seqno,
     );
 
     final authKey = loadedAuthKey ??
