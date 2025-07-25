@@ -63,9 +63,17 @@ Uint8List _encodeWithAuth(
 }
 
 class MessageIdGenerator {
+  MessageIdGenerator({
+    int lastSentMessageId = 0,
+    this.seqnoCounter = 0,
+    this.serverTicksOffset = 0,
+  }) {
+    _lastSentMessageId = lastSentMessageId;
+  }
+
   int _lastSentMessageId = 0;
-  int _seqno = 0;
-  int serverTicksOffset = 0;
+  int seqnoCounter = 0;
+  int serverTicksOffset;
 
   _IdSeq _next(bool preferEncryption) {
     var msgId =
@@ -80,7 +88,7 @@ class MessageIdGenerator {
       _lastSentMessageId = msgId;
     }
 
-    final seqno = preferEncryption ? _seqno++ * 2 + 1 : _seqno * 2;
+    final seqno = preferEncryption ? seqnoCounter++ * 2 + 1 : seqnoCounter * 2;
 
     return _IdSeq(msgId, seqno);
   }
