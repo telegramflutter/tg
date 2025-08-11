@@ -1,9 +1,9 @@
 part of '../tg.dart';
 
-InputCheckPasswordSRP check2FA(
+Future<InputCheckPasswordSRP> check2FA(
   AccountPassword accountPassword,
   String password,
-) {
+) async {
   final currentAlgo = accountPassword.currentAlgo;
   final newAlgo = accountPassword.newAlgo;
 
@@ -37,12 +37,19 @@ InputCheckPasswordSRP check2FA(
   final x2 = [...salt2, ...hash0.take(32), ...salt2];
   final hash = sha256(x2);
 
-  final params = pc.Pbkdf2Parameters(Uint8List.fromList(salt1), 100000, 64);
-  final derive = pc.PBKDF2KeyDerivator(pc.HMac.withDigest(pc.SHA512Digest()));
+  final pbkdf2Alg = cryptography.Pbkdf2(
+    macAlgorithm: cryptography.Hmac.sha512(),
+    iterations: 100000,
+    bits: 512, // 64 bytes
+  );
 
-  derive.init(params);
+  final secret = cryptography.SecretKey(hash); // Uint8List
+  final derived = await pbkdf2Alg.deriveKey(
+    secretKey: secret,
+    nonce: salt1, // salt
+  );
 
-  final pbkdf2 = derive.process(Uint8List.fromList(hash));
+  final pbkdf2 = await derived.extractBytes(); // 64 bytes
 
   final x3 = [...salt2, ...pbkdf2.take(64), ...salt2];
   final x = _bigEndianInteger(sha256(x3));

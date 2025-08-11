@@ -139,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final passwordInput = _controller.text.trim();
       _controller.clear();
 
-      final password = tg.check2FA(_accountPassword!, passwordInput);
+      final password = await tg.check2FA(_accountPassword!, passwordInput);
       final checkPasswordResponse =
           await c.auth.checkPassword(password: password);
       logToList(checkPasswordResponse);
