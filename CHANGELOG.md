@@ -1,4 +1,8 @@
-## 0.0.13
+## 0.0.14
+
+ - Faster password cryptography thanks to @Ilham-Habibullin.
+
+ ## 0.0.13
 
  - Added a working example.
  
