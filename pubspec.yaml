@@ -16,6 +16,7 @@ dependencies:
   t: ^0.0.26
   archive: ^4.0.7
   pointycastle: ^4.0.0
+  cryptography: ^2.7.0
 
 dev_dependencies:
   lints: ^6.0.0
