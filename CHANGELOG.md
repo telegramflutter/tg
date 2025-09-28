@@ -1,4 +1,8 @@
-## 0.0.14
+## 0.0.15
+
+ - Update `t` version.
+
+ ## 0.0.14
 
  - Faster password cryptography thanks to @Ilham-Habibullin.
 

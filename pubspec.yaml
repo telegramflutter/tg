@@ -1,6 +1,6 @@
 name: tg
 description: Telegram Client API (MTProto) to connect to Telegram and control a user programmatically.
-version: 0.0.14
+version: 0.0.15
 homepage: https://pwa.ir
 repository: https://github.com/telegramflutter/tg
 topics:
@@ -13,7 +13,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  t: ^0.0.29
+  t: ^0.0.30
   archive: ^4.0.7
   pointycastle: ^4.0.0
   cryptography: ^2.7.0
