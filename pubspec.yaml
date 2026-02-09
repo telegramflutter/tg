@@ -13,7 +13,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  t: ">=1.0.0 <222.0.0"
+  t: ">=1.0.0 <223.0.0"
   archive: ^4.0.7
   pointycastle: ^4.0.0
   cryptography: ^2.7.0
