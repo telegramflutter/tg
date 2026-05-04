@@ -1,7 +1,11 @@
+## 0.0.17
+
+ - Use Random sessionId (#15)
+
 ## 0.0.16
 
  - Update `t` version.
-
+ 
  ## 0.0.14
 
  - Faster password cryptography thanks to @Ilham-Habibullin.
