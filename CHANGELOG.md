@@ -1,3 +1,7 @@
+## 0.0.18
+
+ - Fix BadServerSalt and send MsgsAck packets (#16)
+
 ## 0.0.17
 
  - Use Random sessionId (#15)
