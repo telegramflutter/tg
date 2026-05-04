@@ -111,6 +111,12 @@ class Client extends t.Client {
       final gZippedData = GZipDecoder().decodeBytes(msg.packedData);
       final newObj = BinaryReader(Uint8List.fromList(gZippedData)).readObject();
       _handleIncomingMessage(newObj);
+    } else if (msg is NewSessionCreated) {
+      authorizationKey = AuthorizationKey(
+        authorizationKey.id,
+        authorizationKey.key,
+        msg.serverSalt,
+      );
     } else if (msg is BadServerSalt) {
       authorizationKey = AuthorizationKey(
         authorizationKey.id,
