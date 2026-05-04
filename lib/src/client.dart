@@ -3,8 +3,9 @@ part of '../tg.dart';
 class _PendingTask {
   final Completer<t.Result> completer;
   final t.TlMethod method;
+  final List<int> sentAcks;
 
-  _PendingTask(this.completer, this.method);
+  _PendingTask(this.completer, this.method, this.sentAcks);
 }
 
 class Client extends t.Client {
@@ -104,7 +105,6 @@ class Client extends t.Client {
         _handleIncomingMessage(newRpcResult);
         return;
       }
-
       task?.completer.complete(t.Result.ok(msg.result));
       _pendingTasks.remove(reqMsgId);
     } else if (msg is GzipPacked) {
@@ -122,6 +122,9 @@ class Client extends t.Client {
       final task = _pendingTasks.remove(badMsgId);
 
       if (task != null) {
+        if (task.sentAcks.isNotEmpty) {
+          authorizationKey._msgsToAck.addAll(task.sentAcks);
+        }
         _invoke(task.method, task.completer);
       }
     }
@@ -140,29 +143,40 @@ class Client extends t.Client {
     final msgsToAck = authorizationKey._msgsToAck;
 
     final m = idGenerator._next(preferEncryption);
+    List<int> currentAcks = [];
 
     if (preferEncryption && msgsToAck.isNotEmpty) {
+      currentAcks = msgsToAck.toList();
       final ack = idGenerator._next(false);
-      final ackMsg = MsgsAck(msgIds: msgsToAck.toList());
+      final ackMsg = MsgsAck(msgIds: currentAcks);
       msgsToAck.clear();
 
-      final container = MsgContainer(
-        messages: [
-          Msg(msgId: m.id, seqno: m.seqno, bytes: 0, body: method),
-          Msg(msgId: ack.id, seqno: ack.seqno, bytes: 0, body: ackMsg),
-        ],
-      );
+      // final container = MsgContainer(
+      //   messages: [
+      //     Msg(msgId: m.id, seqno: m.seqno, bytes: 0, body: method),
+      //     Msg(msgId: ack.id, seqno: ack.seqno, bytes: 0, body: ackMsg),
+      //   ],
+      // );
 
-      void nop(TlObject o) {
-        //
-      }
+      // void nop(TlObject o) {
+      //   //
+      // }
 
-      nop(container);
+      // nop(container);
 
       //return invoke(container, false);
+
+      final ackBuffer = _encodeWithAuth(
+        ackMsg,
+        ack,
+        _sessionId,
+        authorizationKey,
+      );
+      obfuscation.send.encryptDecrypt(ackBuffer, ackBuffer.length);
+      await socket.send(ackBuffer);
     }
 
-    _pendingTasks[m.id] = _PendingTask(completer, method);
+    _pendingTasks[m.id] = _PendingTask(completer, method, currentAcks);
     final buffer = authorizationKey.id == 0
         ? _encodeNoAuth(method, m)
         : _encodeWithAuth(method, m, _sessionId, authorizationKey);
