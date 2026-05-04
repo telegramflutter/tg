@@ -55,6 +55,8 @@ class Client extends t.Client {
 
   final _streamController = StreamController<UpdatesBase>.broadcast();
 
+  final int _sessionId = Random.secure().nextInt(0x7FFFFFFF);
+
   Stream<UpdatesBase> get stream => _streamController.stream;
 
   void _handleIncomingMessage(TlObject msg) {
@@ -149,7 +151,7 @@ class Client extends t.Client {
     _pending[m.id] = completer;
     final buffer = authorizationKey.id == 0
         ? _encodeNoAuth(method, m)
-        : _encodeWithAuth(method, m, 10, authorizationKey);
+        : _encodeWithAuth(method, m, _sessionId, authorizationKey);
 
     obfuscation.send.encryptDecrypt(buffer, buffer.length);
     await socket.send(buffer);
