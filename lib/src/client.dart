@@ -19,6 +19,7 @@ class Client extends t.Client {
       socket.receiver,
       obfuscation,
       authorizationKey,
+      msgsToAck,
     );
 
     _transformer.stream.listen((v) {
@@ -44,7 +45,6 @@ class Client extends t.Client {
       uot.stream,
       obfuscation,
       idGenerator,
-      msgsToAck,
     );
     final ak = await dh.exchange();
 
@@ -56,6 +56,7 @@ class Client extends t.Client {
   final Obfuscation obfuscation;
   final SocketAbstraction socket;
   final MessageIdGenerator idGenerator;
+  final Set<int> msgsToAck = {};
 
   late final _EncryptedTransformer _transformer;
 
@@ -78,6 +79,9 @@ class Client extends t.Client {
       }
       return;
     } else if (msg is Msg) {
+      if ((msg.seqno & 1) != 0) {
+        msgsToAck.add(msg.msgId);
+      }
       _handleIncomingMessage(msg.body);
       return;
     } else if (msg is BadMsgNotification) {
@@ -129,7 +133,7 @@ class Client extends t.Client {
 
       if (task != null) {
         if (task.sentAcks.isNotEmpty) {
-          authorizationKey._msgsToAck.addAll(task.sentAcks);
+          msgsToAck.addAll(task.sentAcks);
         }
         _invoke(task.method, task.completer);
       }
@@ -146,7 +150,6 @@ class Client extends t.Client {
     Completer<t.Result> completer,
   ) async {
     final preferEncryption = authorizationKey.id != 0;
-    final msgsToAck = authorizationKey._msgsToAck;
 
     final m = idGenerator._next(preferEncryption);
     List<int> currentAcks = [];
