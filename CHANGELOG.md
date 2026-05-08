@@ -1,3 +1,7 @@
+## 0.0.19
+
+ - Fix msgsAck broken by previous PR (#16) (#17)
+
 ## 0.0.18
 
  - Fix BadServerSalt and send MsgsAck packets (#16)
