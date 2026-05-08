@@ -5,6 +5,7 @@ class _EncryptedTransformer {
     this._receiver,
     this._obfuscation,
     this._authorizationKey,
+    this._msgsToAck,
   ) {
     _receiver.listen(_readFrame);
   }
@@ -17,6 +18,7 @@ class _EncryptedTransformer {
   final Stream<List<int>> _receiver;
   final Obfuscation _obfuscation;
   final AuthorizationKey _authorizationKey;
+  final Set<int> _msgsToAck;
 
   final List<int> _read = [];
   int? _length;
@@ -48,7 +50,7 @@ class _EncryptedTransformer {
       final seqno = frame.seqno;
 
       if (seqno != null && (seqno & 1) != 0) {
-        _authorizationKey._msgsToAck.add(frame.messageId);
+        _msgsToAck.add(frame.messageId);
       }
 
       _streamController.add(frame.message);

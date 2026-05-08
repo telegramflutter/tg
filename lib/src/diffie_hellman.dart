@@ -6,7 +6,6 @@ class _DiffieHellman {
     this.receiver,
     this.obfuscation,
     this.idGenerator,
-    this._msgsToAck,
   ) {
     receiver.listen(_onMessage);
   }
@@ -14,7 +13,6 @@ class _DiffieHellman {
   final Obfuscation? obfuscation;
   final Stream<TlObject> receiver;
   final SocketAbstraction socket;
-  final Set<int> _msgsToAck;
 
   void _onMessage(TlObject msg) {
     if (msg is ResPQ) {
@@ -333,7 +331,6 @@ class _DiffieHellman {
       authKeyID,
       authKey,
       saltLeft ^ saltRight,
-      _msgsToAck,
     );
 
     return ak;
