@@ -1,4 +1,8 @@
-## 0.0.19
+## 0.0.20
+
+ - Update README.md noting the package supports all `t` versions from 218 and above.
+
+ ## 0.0.19
 
  - Fix msgsAck broken by previous PR (#16) (#17)
 

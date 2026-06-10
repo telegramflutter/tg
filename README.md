@@ -16,7 +16,7 @@ This is a drop-in replacement for `tdlib` which is written in C/C++.
 
 ## Features
 
-* Supports Telegram API Layer 195.
+* Supports all Telegram API Layers from 218 and above.
 * Serialize/Deserialize MTProto objects to binary format to be sent/received throught the transport protocol (TCP, HTTP).
 
 ## Security Guidelines for Client Developers
